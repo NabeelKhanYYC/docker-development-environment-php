@@ -15,6 +15,7 @@ if [ ! -f /opt/xdebug/xdebug.log ]; then
 else
     echo "xDebug logfile found"
 fi
+echo ""
 
 VSCODE_PLUGINS_TO_INSTALL=("bmewburn.vscode-intelephense-client", "xdebug.php-debug")
 echo "Checking VSCode Plugins"
@@ -56,11 +57,29 @@ else
         echo "Pre-existing installation detected, no extensions installed to prevent any conflicts"
     fi
 fi
+echo ""
 
+VSCODE_AUTH=${VSCODE_AUTH:-password}
 echo "Starting VSCode Server"
 echo "    Port: $PORT_VSCODE"
 echo "    Path: $PATH_VSCODE_PROJECT"
+echo "    Auth: $VSCODE_AUTH"
 
+if [[ -n "$VSCODE_PASSWORD" && "$VSCODE_PASSWORD" != "''" ]]; then
+    echo "    Pass: Value from 'VSCODE_PASSWORD' environment variable"
+    PASSWORD=$VSCODE_PASSWORD
+fi
+
+if [[ "$VSCODE_AUTH" == "password" && -z "$PASSWORD" ]]; then
+    PASSWORD=`/usr/bin/head -c $(od -An -N2 -i /dev/urandom | tr -d ' ') /dev/urandom | /usr/bin/md5sum | awk '{print $1}'`
+    PASSWORD=${PASSWORD:4:24}
+    echo "    Pass: $PASSWORD"
+fi
+echo ""
+
+if [ ! -z "$PASSWORD" ]; then
+    export PASSWORD=$PASSWORD
+fi
 mkdir -p /opt/vscode/data/config /opt/vscode/data/extensions
 /opt/vscode/bin/code-server \
     --app-name "Development Environment (PHP)" \
@@ -71,15 +90,24 @@ mkdir -p /opt/vscode/data/config /opt/vscode/data/extensions
     --disable-update-check \
     --disable-getting-started-override \
     --cert \
-    --auth "${VSCODE_AUTH:-none}" \
-    $PATH_VSCODE_PROJECT & 
+    --auth "$VSCODE_AUTH" \
+    $PATH_VSCODE_PROJECT &> /opt/log/vscode.log & 
 
-echo "Waiting for VSCode Server to start:"
-echo -n "    "
+if [ ! -z "$PASSWORD" ]; then
+    # We don't need this in the environment (either you know it or you don't)
+    unset PASSWORD
+fi
+
+echo "Waiting for VSCode Server to start.."
 until nc -z localhost $PORT_VSCODE; do
-    echo -n "."
     sleep 1
 done
+echo ""
+
+echo "Starting Cron"
+/usr/sbin/cron -f -l 1 2>&1 >> /opt/log/cron.log &
+crontab -u root /etc/cron.d/default
+echo ""
 
 if [ ! -d /opt/ssh/ide ]; then
     echo "Generating SSH Keys and storing it on the ssh volume"
@@ -92,17 +120,17 @@ if [ ! -d /opt/ssh/ide ]; then
 
     echo "Client Key"
     ssh-keygen -N "" -t ed25519 -f /opt/ssh/ide/client
-    echo ""
 
     echo "Adding to shared authorized_keys"
     cat /opt/ssh/ide/client.pub
     cat /opt/ssh/ide/client.pub >> /opt/ssh/authorized_keys
-    
-    RANDOM_SEED=$(( RANDOM % 65535))
-    PASSWORD=`/usr/bin/head -c $RANDOM_SEED | /usr/bin/md5sum | awk '{print $1}'`
+    echo ""    
+
+    PASSWORD=`/usr/bin/head -c $(od -An -N2 -i /dev/urandom | tr -d ' ') /dev/urandom | /usr/bin/md5sum | awk '{print $1}'`
 
     echo "Setting root password to '${PASSWORD}'"
     echo root:${PASSWORD} | chpasswd
+    echo ""
 fi
 
 echo "Starting SSH..."

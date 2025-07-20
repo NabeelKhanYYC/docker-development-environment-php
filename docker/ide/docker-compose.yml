@@ -21,8 +21,8 @@ services:
       - PORT_VSCODE=80
       - PATH_VSCODE_PROJECT=/opt/project/
       - VSCODE_PLUGINS=''
-      - VSCODE_AUTH=password
-      - PASSWORD=password
+      # Set VSCODE_AUTH=none if you don't want any password 
+      # Set VSCODE_PASSWORD in .env file or let one get automatically generated for you
 volumes:
   project:
     external: false

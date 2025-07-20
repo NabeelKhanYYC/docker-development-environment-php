@@ -43,6 +43,10 @@ RUN pecl install xdebug
 # Install PHP: Composer
 RUN apt-get install -y composer
 
+# Install Cron
+RUN apt-get -y install cron
+COPY ./etc/cron/crontab /etc/cron.d/default
+
 # Cleanup
 RUN apt-get -y autoremove && apt-get -y clean
 
