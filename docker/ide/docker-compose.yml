@@ -1,0 +1,39 @@
+services:
+  ide:
+    hostname: 'ide'
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    restart: "no"
+    ports:
+      - 50000:80
+      - 50001:22
+    volumes:
+      - project:/opt/project:rw
+      - logs:/opt/log:rw
+      - ssh:/opt/ssh/:rw
+      - xdebug:/opt/xdebug:rw
+      - vscode:/opt/vscode/data:rw
+      - ../shared-folder:/opt/shared-folder:rw
+    networks:
+      - project
+    environment:
+      - PORT_VSCODE=80
+      - PATH_VSCODE_PROJECT=/opt/project/
+      - VSCODE_PLUGINS=''
+      - VSCODE_AUTH=password
+      - PASSWORD=password
+volumes:
+  project:
+    external: false
+  vscode:
+    external: false
+  xdebug:
+    external: false
+  ssh:
+    external: false
+  logs:
+    external: false
+networks:
+  project:
+    external: false

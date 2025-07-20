@@ -1,0 +1,17 @@
+#!/bin/bash
+
+GZIP=-9
+DATESTAMP=`date +%Y-%m-%d`
+TIMESTAMP=`date +%H-%M-%S`
+FULLSTAMP=${DATESTAMP}_$TIMESTAMP
+
+BACKUP_PATH="/opt/shared-folder/backup/$DATESTAMP"
+
+echo "Backing up project to '$BACKUP_PATH'"
+mkdir -p $BACKUP_PATH
+tar czvf $BACKUP_PATH/$FULLSTAMP.tar.gz /opt/project/
+
+RESULT=$?
+if [ $RESULT -eq 0 ]; then
+    echo "Backup complete, cleaning up..."
+fi

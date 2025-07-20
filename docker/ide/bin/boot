@@ -1,0 +1,110 @@
+#!/bin/bash
+
+echo "Setting up xDebug"
+if [ ! -d /opt/xdebug/output/ ]; then
+    echo "xDebug output directory not found, creating it"
+    mkdir -p /opt/xdebug/output/ || exit 1
+    chmod -R 755 /opt/xdebug/ || exit 1
+else
+    echo "xDebug output directory found"
+fi
+
+if [ ! -f /opt/xdebug/xdebug.log ]; then
+    echo "xDebug logfile not found, creating it"
+    touch /opt/xdebug/xdebug.log || exit 1
+else
+    echo "xDebug logfile found"
+fi
+
+VSCODE_PLUGINS_TO_INSTALL=("bmewburn.vscode-intelephense-client", "xdebug.php-debug")
+echo "Checking VSCode Plugins"
+
+if [ -n "$VSCODE_PLUGINS" ] && [ "$VSCODE_PLUGINS" != "''" ]; then
+    if [[ "$VSCODE_PLUGINS" == *";"* ]]; then
+        IFS=';' read -ra VSCODE_PLUGINS_ADDITIONAL <<< "$VSCODE_PLUGINS"
+        if [ ${#VSCODE_PLUGINS_ADDITIONAL[@]} -gt 0 ]; then
+            echo "Found ${#VSCODE_PLUGINS_ADDITIONAL[@]} additional plugins to install"
+            VSCODE_PLUGINS_TO_INSTALL+=("${VSCODE_PLUGINS_ADDITIONAL[@]}")
+        fi
+    else
+        echo "Only one additional plugin detected. If there should be more seperate them with semicolon (;)"
+        VSCODE_PLUGINS_TO_INSTALL+=("$VSCODE_PLUGINS")
+    fi
+else
+    echo "No additional VSCode Plugins configured."
+    echo "Set VSCODE_PLUGINS environment variable with arrays of plugins to install (seperate with ;)"
+fi
+
+if [ ${#VSCODE_PLUGINS_TO_INSTALL[@]} -eq 0 ]; then
+    echo "No VSCode Plugins configured at all"
+else
+    if [ ! -f /opt/vscode/data/extensions/extensions.json ]; then
+        for Plugin in "${VSCODE_PLUGINS_TO_INSTALL[@]}"; do
+            Plugin=${Plugin%,}
+            if [ ls /opt/vscode/data/extensions/${Plugin}-* &> /dev/null ]; then
+                echo "Found: ${Plugin}"
+            else
+                echo "Installing: ${Plugin}"
+                /opt/vscode/bin/code-server --force --install-extension ${Plugin}
+            fi
+        done
+
+        echo "Copying over local extensions to data directory"
+        mkdir -p /opt/vscode/data/extensions/
+        cp -a /root/.local/share/code-server/extensions/* /opt/vscode/data/extensions/
+    else
+        echo "Pre-existing installation detected, no extensions installed to prevent any conflicts"
+    fi
+fi
+
+echo "Starting VSCode Server"
+echo "    Port: $PORT_VSCODE"
+echo "    Path: $PATH_VSCODE_PROJECT"
+
+mkdir -p /opt/vscode/data/config /opt/vscode/data/extensions
+/opt/vscode/bin/code-server \
+    --app-name "Development Environment (PHP)" \
+    --bind-addr 0.0.0.0:$PORT_VSCODE \
+    --user-data-dir /opt/vscode/data/config \
+    --extensions-dir /opt/vscode/data/extensions \
+    --disable-telemetry \
+    --disable-update-check \
+    --disable-getting-started-override \
+    --cert \
+    --auth "${VSCODE_AUTH:-none}" \
+    $PATH_VSCODE_PROJECT & 
+
+echo "Waiting for VSCode Server to start:"
+echo -n "    "
+until nc -z localhost $PORT_VSCODE; do
+    echo -n "."
+    sleep 1
+done
+
+if [ ! -d /opt/ssh/ide ]; then
+    echo "Generating SSH Keys and storing it on the ssh volume"
+    mkdir -p /opt/ssh/ide
+    echo ""
+
+    echo "Server Key"
+    ssh-keygen -N "" -t ed25519 -f /opt/ssh/ide/server
+    echo ""
+
+    echo "Client Key"
+    ssh-keygen -N "" -t ed25519 -f /opt/ssh/ide/client
+    echo ""
+
+    echo "Adding to shared authorized_keys"
+    cat /opt/ssh/ide/client.pub
+    cat /opt/ssh/ide/client.pub >> /opt/ssh/authorized_keys
+    
+    RANDOM_SEED=$(( RANDOM % 65535))
+    PASSWORD=`/usr/bin/head -c $RANDOM_SEED | /usr/bin/md5sum | awk '{print $1}'`
+
+    echo "Setting root password to '${PASSWORD}'"
+    echo root:${PASSWORD} | chpasswd
+fi
+
+echo "Starting SSH..."
+/usr/sbin/sshd -D -e
+echo "FATAL: SSH process ended."

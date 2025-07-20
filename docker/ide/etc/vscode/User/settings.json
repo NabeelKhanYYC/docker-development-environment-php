@@ -1,0 +1,25 @@
+{
+    "editor.minimap.enabled": false,
+    "workbench.colorTheme": "Visual Studio Dark",
+    "php.validate.executablePath": "/usr/bin/php",
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "xDebug (localhost)",
+                "type": "php",
+                "request": "launch",
+                "port": 9003
+            },
+            {
+                "name": "xDebug (via Apache2)",
+                "type": "php",
+                "request": "launch",
+                "port": 9003,
+                "pathMappings": {
+                    "/var/www/html/": "${workspaceRoot}"
+                }
+            }
+        ]
+    }
+}
