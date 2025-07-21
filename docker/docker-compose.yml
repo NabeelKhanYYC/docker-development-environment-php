@@ -1,6 +1,7 @@
 include:
   - ./ide/docker-compose.yml
   - ./cli/docker-compose.yml
+  - ./claude/docker-compose.yml
 networks:
   project:
     external: false

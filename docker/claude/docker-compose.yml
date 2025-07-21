@@ -1,0 +1,43 @@
+services:
+  claude:
+    hostname: 'claude'
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      additional_contexts:
+        common: "../common/"
+    restart: "no"
+    ports:
+      - 50020:22
+    volumes:
+      - claude:/root/.claude/:rw
+      - project:/opt/project:rw
+      - logs:/opt/log:rw
+      - ssh:/opt/ssh/:rw
+      - xdebug:/opt/xdebug:ro
+      - ../shared-folder:/opt/shared-folder:rw
+    networks:
+      - project
+    environment:
+      - ANTHROPIC_API_KEY=""
+      - DISABLE_TELEMETRY=1
+      - DISABLE_ERROR_REPORTING=1
+      - DISABLE_AUTOUPDATER=1
+      - CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+      - CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL=1
+      - CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR=1
+      - BASH_DEFAULT_TIMEOUT_MS=3600000
+volumes:
+  project:
+    external: false
+  xdebug:
+    external: false
+  ssh:
+    external: false
+  logs:
+    external: false
+  claude:
+    external: false
+networks:
+  project:
+    external: false

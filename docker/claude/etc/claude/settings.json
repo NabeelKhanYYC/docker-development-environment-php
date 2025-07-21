@@ -1,0 +1,8 @@
+{
+    "autoUpdates": false,
+    "theme": "dark",
+    "verbose": true,
+    "env": {
+        "BASH_DEFAULT_TIMEOUT_MS": 3600000
+    }
+}

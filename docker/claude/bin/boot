@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ ! -d /opt/ssh/claude ]; then
+    echo "Generating SSH Keys and storing it on the ssh volume"
+    mkdir -p /opt/ssh/claude
+    echo ""
+
+    echo "Server Key"
+    ssh-keygen -N "" -t ed25519 -f /opt/ssh/claude/server
+    echo ""
+
+    echo "Client Key"
+    ssh-keygen -N "" -t ed25519 -f /opt/ssh/claude/client
+
+    echo "Adding to shared authorized_keys"
+    cat /opt/ssh/claude/client.pub
+    cat /opt/ssh/claude/client.pub >> /opt/ssh/authorized_keys
+    echo ""
+
+    PASSWORD=`/usr/bin/head -c $(od -An -N2 -i /dev/urandom | tr -d ' ') /dev/urandom | /usr/bin/md5sum | awk '{print $1}'`
+
+    echo "Setting root password to '${PASSWORD}'"
+    echo root:$PASSWORD | chpasswd
+    echo ""
+fi
+
+if [ ! -L /root/.ssh/authorized_keys ]; then
+    if [ -f /root/.ssh/authorized_keys ]; then
+        mv /root/.ssh/authorized_keys /root/.ssh/authorized_keys.old
+    fi
+    ln -s /opt/ssh/authorized_keys /root/.ssh/authorized_keys
+fi
+
+echo "Starting SSH..."
+/usr/sbin/sshd -D -e
+echo "FATAL: SSH process ended."
