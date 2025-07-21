@@ -1,0 +1,27 @@
+services:
+  browser:
+    hostname: 'browser'
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      additional_contexts:
+        common: "../common/"
+    restart: "no"
+    ports:
+      - 50031:80
+    volumes:
+      - project:/usr/share/nginx/html:ro
+      - logs:/opt/log:rw
+      - ssh:/opt/ssh/:rw
+    networks:
+      - project
+volumes:
+  project:
+    external: false
+  ssh:
+    external: false
+  logs:
+    external: false
+networks:
+  project:
+    external: false

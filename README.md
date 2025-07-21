@@ -4,11 +4,12 @@ A comprehensive Docker-based development environment specifically designed for P
 
 ## Overview
 
-This project provides three containerized services that work together to create a complete PHP development environment:
+This project provides four containerized services that work together to create a complete PHP development environment:
 
 - **IDE Container**: Web-based VS Code server with PHP debugging capabilities
 - **CLI Container**: Command-line PHP environment for running scripts and commands  
 - **Claude Container**: AI coding assistant integration via Anthropic's Claude Code
+- **Browser Container**: Static file browser for navigating project filesystem
 
 ## Prerequisites
 
@@ -31,6 +32,7 @@ This project provides three containerized services that work together to create 
 
 3. Access the services:
    - **Web IDE**: http://localhost:50001
+   - **File Browser**: http://localhost:50031
    - **SSH to IDE**: `ssh root@localhost -p 50000`
    - **SSH to CLI**: `ssh root@localhost -p 50010`
    - **SSH to Claude**: `ssh root@localhost -p 50020`
@@ -45,6 +47,7 @@ This project provides three containerized services that work together to create 
   - XDebug for debugging
   - PHP Composer for dependency management
   - Automated backup system
+  - Centralized logging to `/opt/log/`
 - **Ports**: 
   - 50000 (SSH)
   - 50001 (Web IDE)
@@ -66,6 +69,16 @@ This project provides three containerized services that work together to create 
   - Direct access to project files
 - **Ports**: 
   - 50020 (SSH)
+
+### Browser Container
+- **Base**: Nginx Latest
+- **Features**:
+  - Static file browser with autoindex
+  - Read-only access to project files
+  - Web-based filesystem navigation
+  - Centralized logging to `/opt/log/nginx/`
+- **Ports**: 
+  - 50031 (HTTP)
 
 ## Development Workflow
 
@@ -149,6 +162,11 @@ docker/
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   └── etc/
+├── browser/             # File browser container
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── etc/
+│   └── bin/
 ├── common/              # Shared configuration
 │   └── etc/
 └── shared-folder/       # Shared data and backups
@@ -163,14 +181,48 @@ The IDE container includes an automated backup system:
 - Backups are organized by date
 - Backup script located at `/opt/bin/backup`
 
+## Logging
+
+All containers share a common log volume mounted at `/opt/log/`, providing centralized logging accessible from any container or the host system.
+
+### Available Log Files
+
+**Browser Container (Nginx):**
+- `/opt/log/nginx/access.log` - HTTP access logs
+- `/opt/log/nginx/error.log` - Nginx error logs  
+- `/opt/log/nginx/daemon.log` - Nginx daemon logs
+
+**IDE Container:**
+- `/opt/log/vscode.log` - VS Code server logs
+- `/opt/log/cron.log` - Cron service logs
+- `/opt/log/backup.log` - Automated backup logs
+
+### Accessing Logs
+
+**From any container:**
+```bash
+# SSH into any container and access logs directly
+tail -f /opt/log/nginx/access.log
+tail -f /opt/log/vscode.log
+```
+
+**From host system:**
+```bash
+# View logs using docker-compose
+docker-compose logs [service-name]
+
+# Or access the log volume directly
+docker-compose exec ide tail -f /opt/log/nginx/access.log
+```
+
 ## Data Persistence
 
 The following data is persisted across container restarts:
-- Project files (`/opt/project/`)
+- Project files (`/opt/project/`) - accessible via IDE, CLI, Claude, and browser
 - VS Code settings and extensions
 - SSH keys and configuration
 - XDebug data
-- Application logs
+- Log files (shared volume at `/opt/log/`) - accessible from all containers
 - Claude settings
 
 ## Troubleshooting
@@ -191,12 +243,17 @@ docker-compose up -d
 **Can't access web IDE:**
 - Check if port 50001 is available
 - Verify the container is running: `docker-compose ps`
-- Check password in logs: `docker-compose logs ide`
+- Check password in logs: `docker-compose logs ide` or `/opt/log/vscode.log`
 
 **XDebug not working:**
 - Verify XDebug is loaded: `php -m | grep xdebug`
 - Check VS Code debug configuration
 - Ensure path mappings are correct
+
+**Can't access file browser:**
+- Check if port 50031 is available
+- Verify the browser container is running: `docker-compose ps`
+- Check nginx logs: `docker-compose logs browser` or `/opt/log/nginx/error.log`
 
 **SSH connection refused:**
 - Wait for containers to fully start
@@ -227,11 +284,3 @@ docker-compose up -d
 ## License
 
 MIT License - see LICENSE file for details.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test in a clean environment
-5. Submit a pull request

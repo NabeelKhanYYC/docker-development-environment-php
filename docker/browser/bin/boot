@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ ! -d /opt/log/nginx/ ]; then
+    mkdir -p /opt/log/nginx/
+fi
+
+echo "Starting nginx..."
+/docker-entrypoint.sh nginx -g 'daemon off;' >> /opt/log/nginx/daemon.log 2>&1
+echo "FATAL: nginx process ended."
