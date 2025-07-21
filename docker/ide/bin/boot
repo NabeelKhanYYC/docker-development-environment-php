@@ -124,13 +124,33 @@ if [ ! -d /opt/ssh/ide ]; then
     echo "Adding to shared authorized_keys"
     cat /opt/ssh/ide/client.pub
     cat /opt/ssh/ide/client.pub >> /opt/ssh/authorized_keys
-    echo ""    
+    echo ""
 
     PASSWORD=`/usr/bin/head -c $(od -An -N2 -i /dev/urandom | tr -d ' ') /dev/urandom | /usr/bin/md5sum | awk '{print $1}'`
 
     echo "Setting root password to '${PASSWORD}'"
     echo root:${PASSWORD} | chpasswd
     echo ""
+fi
+
+if [ ! -d /opt/shared-folder/ssh ]; then
+    echo "Generating developer SSH Key in shared folder"
+    mkdir -p /opt/shared-folder/ssh
+
+    ssh-keygen -N "" -t ed25519 -f /opt/shared-folder/ssh/key -C developer
+    cat /opt/shared-folder/ssh/key.pub
+    cat /opt/shared-folder/ssh/key.pub >> /opt/ssh/authorized_keys
+    echo ""
+elif ! grep -Fxf /opt/shared-folder/ssh/key.pub /opt/ssh/authorized_keys &> /dev/null; then
+    echo "Adding developer SSH Key to authorized_keys"
+    cat /opt/shared-folder/ssh/key.pub >> /opt/ssh/authorized_keys
+fi
+
+if [ ! -L /root/.ssh/authorized_keys ]; then
+    if [ -f /root/.ssh/authorized_keys ]; then
+        mv /root/.ssh/authorized_keys /root/.ssh/authorized_keys.old
+    fi
+    ln -s /opt/ssh/authorized_keys /root/.ssh/authorized_keys
 fi
 
 echo "Starting SSH..."

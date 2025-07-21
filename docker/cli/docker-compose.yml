@@ -1,6 +1,6 @@
 services:
-  ide:
-    hostname: 'ide'
+  cli:
+    hostname: 'cli'
     build:
       context: ./
       dockerfile: ./Dockerfile
@@ -8,27 +8,17 @@ services:
         common: "../common/"
     restart: "no"
     ports:
-      - 50000:22
-      - 50001:80
+      - 50010:22
     volumes:
       - project:/opt/project:rw
       - logs:/opt/log:rw
       - ssh:/opt/ssh/:rw
       - xdebug:/opt/xdebug:rw
-      - vscode:/opt/vscode/data:rw
       - ../shared-folder:/opt/shared-folder:rw
     networks:
       - project
-    environment:
-      - PORT_VSCODE=80
-      - PATH_VSCODE_PROJECT=/opt/project/
-      - VSCODE_PLUGINS=''
-      # Set VSCODE_AUTH=none if you don't want any password 
-      # Set VSCODE_PASSWORD in .env file or let one get automatically generated for you
 volumes:
   project:
-    external: false
-  vscode:
     external: false
   xdebug:
     external: false

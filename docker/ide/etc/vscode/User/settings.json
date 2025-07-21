@@ -12,12 +12,21 @@
                 "port": 9003
             },
             {
+                "name": "xDebug (via CLI container)",
+                "type": "php",
+                "request": "launch",
+                "port": 9003,
+                "pathMappings": {
+                    "/var/www/html/": "/opt/project/"
+                }
+            },
+            {
                 "name": "xDebug (via Apache2)",
                 "type": "php",
                 "request": "launch",
                 "port": 9003,
                 "pathMappings": {
-                    "/var/www/html/": "${workspaceRoot}"
+                    "/var/www/html/": "/opt/project/"
                 }
             }
         ]

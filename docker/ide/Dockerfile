@@ -15,7 +15,8 @@ RUN apt-get install -y curl netcat-openbsd
 
 # Install SSH
 RUN apt-get install -y openssh-server && mkdir /var/run/sshd
-COPY ./etc/ssh/sshd.conf /etc/ssh/ssd_config.d/default.conf
+COPY --from=common ./etc/ssh/sshd.conf /etc/ssh/sshd_config
+RUN echo "HostKey /opt/ssh/ide/server" >> /etc/ssh/sshd_config
 RUN mkdir -p /root/.ssh/
 COPY ./etc/ssh/ssh.conf /root/.ssh/config
 
@@ -34,7 +35,7 @@ COPY ./etc/vscode/ /opt/vscode/data/config/
 RUN apt-get install -y software-properties-common
 RUN add-apt-repository ppa:ondrej/php && apt update
 RUN apt-get install -y php8.3-cli php8.3-dev php-pear 
-COPY ./etc/php/ /etc/php/8.3/cli/
+COPY --from=common ./etc/php/ /etc/php/8.3/cli/
 
 # Install PHP: XDebug
 RUN apt-get install -y php8.3-xml

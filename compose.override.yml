@@ -1,6 +1,4 @@
 services:
   ide:
-    ports:
-      - 50001:22
     environment:
       - VSCODE_PASSWORD=${VSCODE_PASSWORD:-''} # This gets pulled from .env, if it's blank one will be randomly generated (check logs)
