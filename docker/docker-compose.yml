@@ -3,6 +3,7 @@ include:
   - ./cli/docker-compose.yml
   - ./claude/docker-compose.yml
   - ./browser/docker-compose.yml
+  - ./web/docker-compose.yml
 networks:
   project:
     external: false

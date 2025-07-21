@@ -1,0 +1,26 @@
+#!/bin/bash
+
+echo "Setting up xDebug"
+if [ ! -d /opt/xdebug/output/ ]; then
+    echo "xDebug output directory not found, creating it"
+    mkdir -p /opt/xdebug/output/ || exit 1
+    chmod -R 755 /opt/xdebug/ || exit 1
+else
+    echo "xDebug output directory found"
+fi
+
+if [ ! -f /opt/xdebug/xdebug.log ]; then
+    echo "xDebug logfile not found, creating it"
+    touch /opt/xdebug/xdebug.log || exit 1
+else
+    echo "xDebug logfile found"
+fi
+echo ""
+
+if [ ! -d /opt/log/web/ ]; then
+    mkdir -p /opt/log/web/
+fi
+
+echo "Starting apache..."
+docker-php-entrypoint apache2-foreground >> /opt/log/web/daemon.log 2>&1
+echo "FATAL: apache process ended."
