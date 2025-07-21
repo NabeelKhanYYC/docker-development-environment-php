@@ -11,7 +11,7 @@ services:
       - 50020:22
     volumes:
       - claude:/root/.claude/:rw
-      - ../../:/opt/project:rw
+      - project:/opt/project:rw
       - logs:/opt/log:rw
       - ssh:/opt/ssh/:rw
       - xdebug:/opt/xdebug:ro

@@ -4,12 +4,13 @@ A comprehensive Docker-based development environment specifically designed for P
 
 ## Overview
 
-This project provides four containerized services that work together to create a complete PHP development environment:
+This project provides five containerized services that work together to create a complete PHP development environment:
 
 - **IDE Container**: Web-based VS Code server with PHP debugging capabilities
 - **CLI Container**: Command-line PHP environment for running scripts and commands  
 - **Claude Container**: AI coding assistant integration via Anthropic's Claude Code
 - **Browser Container**: Static file browser for navigating project filesystem
+- **Web Container**: Apache web server for executing and serving PHP files
 
 ## Prerequisites
 
@@ -27,20 +28,21 @@ This project provides four containerized services that work together to create a
 
 2. Start the development environment:
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. Access the services:
    - **Web IDE**: http://localhost:50001
    - **File Browser**: http://localhost:50031
-   - **SSH to IDE**: `ssh root@localhost -p 50000`
-   - **SSH to CLI**: `ssh root@localhost -p 50010`
-   - **SSH to Claude**: `ssh root@localhost -p 50020`
+   - **Web Server**: http://localhost:50041
+   - **SSH to IDE**: `ssh -i ./docker/shared-folder/ssh/key root@localhost -p 50000`
+   - **SSH to CLI**: `ssh -i ./docker/shared-folder/ssh/key root@localhost -p 50010`
+   - **SSH to Claude**: `ssh -i ./docker/shared-folder/ssh/key root@localhost -p 50020`
 
 ## Services
 
 ### IDE Container
-- **Base**: Ubuntu Latest
+- **Base**: [Ubuntu Latest](https://hub.docker.com/_/ubuntu)
 - **PHP**: 8.3 with CLI and development tools
 - **Features**: 
   - VS Code Server accessible via web browser
@@ -53,7 +55,7 @@ This project provides four containerized services that work together to create a
   - 50001 (Web IDE)
 
 ### CLI Container  
-- **Base**: PHP 8.3 CLI
+- **Base**: [PHP 8.3 CLI](https://hub.docker.com/_/php)
 - **Features**:
   - Pure command-line PHP environment
   - XDebug support
@@ -62,7 +64,7 @@ This project provides four containerized services that work together to create a
   - 50010 (SSH)
 
 ### Claude Container
-- **Base**: Ubuntu Latest
+- **Base**: [Ubuntu Latest](https://hub.docker.com/_/ubuntu)
 - **Features**:
   - Node.js runtime
   - Claude Code CLI for AI assistance
@@ -71,27 +73,38 @@ This project provides four containerized services that work together to create a
   - 50020 (SSH)
 
 ### Browser Container
-- **Base**: Nginx Latest
+- **Base**: [Nginx Latest](https://hub.docker.com/_/nginx)
 - **Features**:
   - Static file browser with autoindex
   - Read-only access to project files
   - Web-based filesystem navigation
+  - PHP source code viewing (serves .php files as text/plain)
   - Centralized logging to `/opt/log/nginx/`
 - **Ports**: 
   - 50031 (HTTP)
+
+### Web Container
+- **Base**: [PHP 8.3 with Apache](https://hub.docker.com/_/php)
+- **Features**:
+  - Apache web server for PHP execution
+  - XDebug support for web debugging
+  - PHP file execution and rendering
+  - Centralized logging to `/opt/log/`
+- **Ports**: 
+  - 50041 (HTTP)
 
 ## Development Workflow
 
 ### Using the Web IDE
 1. Open http://localhost:50001 in your browser
-2. If prompted for a password, check the container logs: `docker-compose logs ide`
+2. If prompted for a password, check the container logs: `docker compose logs ide`
 3. Your project files are mounted at `/opt/project/`
 4. PHP debugging is pre-configured with XDebug
 
 ### Using the CLI Container
 ```bash
 # SSH into CLI container
-ssh root@localhost -p 50010
+ssh -i ./docker/shared-folder/ssh/key root@localhost -p 50010
 
 # Run PHP scripts
 php your-script.php
@@ -104,10 +117,23 @@ composer require package/name
 ### Using Claude AI Assistant
 ```bash
 # SSH into Claude container
-ssh root@localhost -p 50020
+ssh -i ./docker/shared-folder/ssh/key root@localhost -p 50020
 
 # Use Claude Code CLI (requires API key)
 claude --help
+```
+
+### Using the Web Container
+```bash
+# Access PHP files via web browser
+# Navigate to http://localhost:50041/your-file.php
+
+# PHP files are executed by Apache and rendered in the browser
+# Perfect for testing web applications and viewing output
+
+# Example: Create a simple PHP file and access it
+echo "<?php phpinfo(); ?>" > /opt/project/info.php
+# Then visit: http://localhost:50041/info.php
 ```
 
 ## Configuration
@@ -135,6 +161,32 @@ The environment includes three pre-configured debug setups:
 - **localhost**: Direct debugging
 - **via CLI container**: For CLI scripts
 - **via Apache2**: For web applications
+
+## SSH Key Management
+
+### Developer SSH Key
+A developer SSH key is automatically generated when the environment starts and is stored at:
+```
+./docker/shared-folder/ssh/key
+```
+
+This key provides secure access to all containers in the development environment. The key is:
+- **Automatically generated**: No manual setup required
+- **Persistent**: Stored in the shared folder and reused across container restarts
+- **Universal**: Works for all containers (IDE, CLI, Claude)
+
+### Using the SSH Key
+All SSH connections to containers should use this developer key:
+
+```bash
+# General format
+ssh -i ./docker/shared-folder/ssh/key root@localhost -p [PORT]
+
+# Example: Connect to IDE container
+ssh -i ./docker/shared-folder/ssh/key root@localhost -p 50000
+```
+
+The key file will be created automatically on first startup, so ensure the containers have been started at least once before attempting SSH connections.
 
 ## Debugging Setup
 
@@ -166,6 +218,10 @@ docker/
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   ├── etc/
+│   └── bin/
+├── web/                 # Web server container
+│   ├── Dockerfile
+│   ├── docker-compose.yml
 │   └── bin/
 ├── common/              # Shared configuration
 │   └── etc/
@@ -208,11 +264,11 @@ tail -f /opt/log/vscode.log
 
 **From host system:**
 ```bash
-# View logs using docker-compose
-docker-compose logs [service-name]
+# View logs using docker compose
+docker compose logs [service-name]
 
 # Or access the log volume directly
-docker-compose exec ide tail -f /opt/log/nginx/access.log
+docker compose exec ide tail -f /opt/log/nginx/access.log
 ```
 
 ## Data Persistence
@@ -220,7 +276,7 @@ docker-compose exec ide tail -f /opt/log/nginx/access.log
 The following data is persisted across container restarts:
 - Project files (`/opt/project/`) - accessible via IDE, CLI, Claude, and browser
 - VS Code settings and extensions
-- SSH keys and configuration
+- Developer SSH key (`./docker/shared-folder/ssh/key`) and SSH configuration
 - XDebug data
 - Log files (shared volume at `/opt/log/`) - accessible from all containers
 - Claude settings
@@ -232,18 +288,18 @@ The following data is persisted across container restarts:
 **Container won't start:**
 ```bash
 # Check container logs
-docker-compose logs [service-name]
+docker compose logs [service-name]
 
 # Rebuild containers
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
 **Can't access web IDE:**
 - Check if port 50001 is available
-- Verify the container is running: `docker-compose ps`
-- Check password in logs: `docker-compose logs ide` or `/opt/log/vscode.log`
+- Verify the container is running: `docker compose ps`
+- Check password in logs: `docker compose logs ide` or `/opt/log/vscode.log`
 
 **XDebug not working:**
 - Verify XDebug is loaded: `php -m | grep xdebug`
@@ -252,33 +308,40 @@ docker-compose up -d
 
 **Can't access file browser:**
 - Check if port 50031 is available
-- Verify the browser container is running: `docker-compose ps`
-- Check nginx logs: `docker-compose logs browser` or `/opt/log/nginx/error.log`
+- Verify the browser container is running: `docker compose ps`
+- Check nginx logs: `docker compose logs browser` or `/opt/log/nginx/error.log`
+
+**Can't access web server:**
+- Check if port 50041 is available
+- Verify the web container is running: `docker compose ps`
+- Check Apache logs: `docker compose logs web`
+- Ensure PHP files are in `/opt/project/` directory
 
 **SSH connection refused:**
 - Wait for containers to fully start
 - Check SSH service status inside container
-- Verify SSH keys are properly mounted
+- Verify the developer SSH key exists at `./docker/shared-folder/ssh/key`
+- Ensure you're using the correct SSH command format: `ssh -i ./docker/shared-folder/ssh/key root@localhost -p [PORT]`
 
 ### Useful Commands
 
 ```bash
 # View running containers
-docker-compose ps
+docker compose ps
 
 # View container logs
-docker-compose logs [service-name]
+docker compose logs [service-name]
 
 # Restart specific service
-docker-compose restart [service-name]
+docker compose restart [service-name]
 
 # Execute command in container
-docker-compose exec [service-name] [command]
+docker compose exec [service-name] [command]
 
 # Clean rebuild
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ## License
