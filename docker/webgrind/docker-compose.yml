@@ -1,0 +1,25 @@
+services:
+  webgrind:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    restart: "no"
+    hostname: 'webgrind'
+    ports:
+      - 50051:80
+    networks:
+      - project
+    volumes:
+      - project:/opt/project:ro
+      - xdebug:/opt/xdebug:ro
+      - webgrind:/opt/webgrind:rw
+volumes:
+  xdebug:
+    external: false
+  webgrind:
+    external: false
+  project:
+    external: false
+networks:
+  project:
+    external: false    

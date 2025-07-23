@@ -4,6 +4,7 @@ include:
   - ./claude/docker-compose.yml
   - ./browser/docker-compose.yml
   - ./web/docker-compose.yml
+  - ./webgrind/docker-compose.yml
 networks:
   project:
     external: false

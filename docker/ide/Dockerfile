@@ -44,7 +44,7 @@ RUN pecl install xdebug
 # Install PHP: Composer
 RUN apt-get install -y git
 RUN apt-get install -y zip
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php -dxdebug.mode=off -- --install-dir=/usr/bin/ --filename=composer
 
 # Install Cron
 RUN apt-get -y install cron
