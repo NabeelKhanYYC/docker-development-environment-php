@@ -1,4 +1,18 @@
 services:
+  browser:
+    volumes:
+      - ${PROJECT_PATH:-project}:/usr/share/nginx/html:ro
+  claude:
+    volumes:
+      - ${PROJECT_PATH:-project}:/opt/project:rw
+  cli:
+    volumes:
+      - ${PROJECT_PATH:-project}:/opt/project:rw
   ide:
     environment:
       - VSCODE_PASSWORD=${VSCODE_PASSWORD:-''} # This gets pulled from .env, if it's blank one will be randomly generated (check logs)
+    volumes:
+      - ${PROJECT_PATH:-project}:/opt/project:rw
+  web:
+    volumes:
+      - ${PROJECT_PATH:-project}:/var/www/html/:ro
