@@ -12,13 +12,10 @@ services:
     volumes:
       - project:/usr/share/nginx/html:ro
       - logs:/opt/log:rw
-      - ssh:/opt/ssh/:rw
     networks:
       - project
 volumes:
   project:
-    external: false
-  ssh:
     external: false
   logs:
     external: false
