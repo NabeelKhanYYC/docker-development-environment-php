@@ -5,12 +5,15 @@ services:
   claude:
     volumes:
       - ${PROJECT_PATH:-project}:/opt/project:rw
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-}
   cli:
     volumes:
       - ${PROJECT_PATH:-project}:/opt/project:rw
   ide:
     environment:
-      - VSCODE_PASSWORD=${VSCODE_PASSWORD:-''} # This gets pulled from .env, if it's blank one will be randomly generated (check logs)
+      - VSCODE_PASSWORD=${VSCODE_PASSWORD:-''}
     volumes:
       - ${PROJECT_PATH:-project}:/opt/project:rw
   web:
